@@ -1,6 +1,4 @@
-
-E para o arquivo `LICENSE`, você pode usar o texto padrão da **Unlicense**:
-
+ 
 ```plaintext
 This is free and unencumbered software released into the public domain.
 
