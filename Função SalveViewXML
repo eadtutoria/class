@@ -1,0 +1,32 @@
+# Função SalveViewXML
+
+A função **SalveViewXML** é responsável por salvar o conteúdo de um arquivo XML em um diretório específico, formatando-o de maneira legível (com indentação). Esta função é útil para gerar arquivos XML a partir de strings XML brutas e garantir que os arquivos sejam bem formatados e facilmente compreensíveis quando abertos em um editor.
+
+## Parâmetros
+
+- **$xmlContent**: String contendo o conteúdo XML que será salvo.
+- **$filePath**: Caminho do diretório onde o arquivo XML será salvo.
+- **$nameFile**: Nome do arquivo XML que será salvo no diretório especificado.
+
+## Código
+
+```php
+class Minhaclass
+{
+    public static function SalveViewXML($xmlContent, $filePath, $nameFile) 
+    {
+        $dom = new DOMDocument();
+        $dom->loadXML($xmlContent);
+        $dom->formatOutput = true;
+        $dom->save($filePath.'/'.$nameFile); 
+        return realpath($filePath);
+    }
+}
+
+// Exemplo de Uso
+$xmlContent = '<root><element>Content</element></root>';
+$filePath = 'app/xml';
+$nameFile = 'meuArquivo.xml';
+
+$caminhoArquivo = Minhaclass::SalveViewXML($xmlContent, $filePath, $nameFile);
+echo "Arquivo salvo em: " . $caminhoArquivo;
