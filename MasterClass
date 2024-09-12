@@ -1,0 +1,648 @@
+## Descrição da Classe `MasterClass`
+
+A classe `MasterClass` desempenha um papel crucial na gestão e manipulação de documentos e informações fiscais, especialmente em sistemas de emissão de NF-e (Nota Fiscal Eletrônica). Sua importância se manifesta em várias áreas fundamentais:
+
+### Conversão e Formatação de Dados
+
+A classe oferece métodos para converter e formatar datas e valores, assegurando que os dados estejam no formato correto para processamento e exibição. Essa funcionalidade é essencial para manter a precisão e integridade das informações fiscais.
+
+### Validação e Limpeza de Dados
+
+Métodos como `removerAcentoNFSE` e `removeSpecialCharacters` garantem que os dados estejam livres de caracteres indesejados e formatados corretamente. Isso é vital para evitar erros na geração de documentos fiscais e relatórios.
+
+### Geração e Salvamento de XML
+
+Funções como `SalveViewXML` e `SalvaXML` são responsáveis por criar e armazenar arquivos XML de forma estruturada e padronizada. Esses arquivos são utilizados para transmitir informações fiscais de forma segura e conforme as normas legais.
+
+### Validação de Documentos
+
+A classe inclui métodos para validar CPFs e CNPJs, ajudando a garantir a precisão dos dados e evitando problemas relacionados à autenticidade e validade dos documentos fiscais.
+
+### Cálculos e Ajustes Fiscais
+
+Métodos como `calcularICMS` e `CalculosMagico` realizam cálculos fiscais necessários para o correto preenchimento de notas e relatórios, assegurando que os valores calculados estejam de acordo com as regulamentações fiscais.
+
+### Integração com Sistema de Certificados
+
+O método `getverifica` lida com a validação e armazenamento de certificados digitais, essenciais para a autenticação e assinatura eletrônica de documentos fiscais.
+
+### Resumo
+
+A classe `MasterClass` centraliza funcionalidades críticas para o processamento, validação e gerenciamento de documentos fiscais, facilitando a conformidade com as regulamentações e melhorando a eficiência do sistema de emissão de NF-e.
+
+
+```<?php
+
+/**
+ * Classe Gera nfe para obtenção do XML | Assinatura
+ *
+ * Autor: Rubens dos Santos
+ * Email: salvadorbba@gmail.com
+ * Celular: (71) 99675-8056
+ * 
+ * Funções:
+ * 
+ * - static function converterData($data)
+ * - static function removerAcentoNFSE($texto)
+ * - static function modeda_string_LIMPA($value)
+ * - static function Moeda($total, $desconto)
+ * - static function calcularICMS($valorMercadoria, $aliquotaICMS)
+ * - static function CalculosMagico($frete, $produto, $valorTotalNota)
+ * - static function cestado($valor)
+ * - static function TrataDoc($valor)
+ * - function removeSpecialCharacters($str)
+ * - function isCpfOrCnpj($str)
+ * - static function getverifica($caminhoPFX, $senhaPFX, $id)
+ * - static function converterData_H($data)
+ * - static function converterDataBr($data)
+ * - static function converterDataBrCompetencia($data)
+ * - static function ZerosAEsquerda($numero, $quandidade)
+ * - static function limitarTexto($texto, $limite)
+ * - static function validarValor($valor)
+ * - static function ErroXML($mensagem)
+ * - static function data_BR($data)
+ * - static function calcularDataFutura($dias)
+ * - static function SalvaXML($id, $file, $chave, $variavel_banco, $protocolo_envio = null, $controleSerie_id, $finalizar = null, $ValorNF = null)
+ * - static function CartaOFF($pedido)
+ * - static function calcularCfop($uf_emitente, $uf_destino)
+ * - static function SeachCFOP($id, $idDest)
+ * - static function DesabilitarBotao($grupo)
+ * - static function cleanPasta($value)
+ * - static function LimpaTexto($string)
+ * - static function removerAcentos($string)
+ * - static function valorPorExtenso($valor)
+ */
+
+
+
+class MasterClass extends TPage  // /// MasterClass::Modelos();
+{
+    public static function converterData($data)
+    {
+        $dt = new DateTime($data);
+        return $dt->format('Y-m-d\TH:i:s');
+    }
+
+  public static function SalveViewXML($xmlContent)
+    {
+ $dom = new DOMDocument();
+$dom->loadXML($xmlContent);
+$dom->formatOutput = true;
+$filePath = 'app/arquivo.xml';
+$dom->save($filePath);
+
+ 
+return realpath($filePath);
+ 
+    }
+  public static function formatarValorPercentual($valor)
+    {
+        // Remove whitespaces and formatting characters
+        $valor = preg_replace('/\s+/', '', $valor);
+
+        // Check if the value is a valid number
+        if (!is_numeric($valor)) {
+            return "Valor inválido!";
+        }
+
+        // Multiply the value by 100 to get the desired output format
+        $valor = round($valor * 100);
+
+        // Convert the value to a string with the desired format
+        $valorFormatado = str_pad($valor, 15, "0", STR_PAD_LEFT);
+
+        // Return the formatted value
+        return $valorFormatado;
+    }
+
+
+ public static function Modelos($key)
+    {
+        
+       // Código gerado pelo snippet: "Conexão com banco de dados"
+        TTransaction::open('minierp');
+
+ 
+    $objeto = PedidoVenda::find( $key );
+return $objeto->modelo;
+
+        TTransaction::close();
+        // -----
+
+ 
+        
+    }
+ 
+  public static function ClienteProduto($produto_id,$cliente_id)
+    {
+        
+    $pessoa = Pessoa::find($cliente_id);
+    
+    
+    $produto = Produto::find($produto_id);
+
+
+        if($pessoa->pessoa_atacado_id==1){
+            
+            return $produto->preco_venda10;
+        }else{
+            
+           return $produto->preco_venda;
+        }
+        
+     
+    }
+
+
+
+
+
+    public static function ValidaEndereco($key){
+          
+        
+    $pessoa= PessoaEndereco::where('pessoa_id', '=', $key)->get();
+  
+    $contado= count($pessoa);
+    if( $contado == 1){
+    
+    $objeto = PessoaEndereco::find($pessoa[0]->id);
+    if($objeto)
+    {
+        $objeto->principal= "T";
+        $objeto->store();    
+    }
+
+    
+    }
+      
+}
+
+
+
+
+
+
+
+
+
+    public static function removerAcentoNFSE($texto)
+    {
+        // Remove acentos
+        $texto = preg_replace('/[áàâãªä]/ui', 'a', $texto);
+        $texto = preg_replace('/[éèêë]/ui', 'e', $texto);
+        $texto = preg_replace('/[íìîï]/ui', 'i', $texto);
+        $texto = preg_replace('/[óòôõö]/ui', 'o', $texto);
+        $texto = preg_replace('/[úùûü]/ui', 'u', $texto);
+        $texto = preg_replace('/[ç]/ui', 'c', $texto);
+
+        // Remove caracteres especiais
+        $texto = preg_replace('/[^a-z0-9]/i', ' ', $texto);
+
+        // Remove espaços extras
+        $texto = preg_replace('/\s+/', ' ', $texto);
+
+        // Converte para minúsculas
+        $texto = strtolower($texto);
+
+        return trim($texto);
+    }
+
+    public static function modeda_string_LIMPA($value)
+    {
+        return number_format($value, 2, ',', '.');
+    }
+
+    public static function Moeda($total, $desconto)
+    {
+        $total = str_replace(',', '.', str_replace('.', '', $total));
+        $desconto = str_replace(',', '.', str_replace('.', '', $desconto));
+
+        // Converter para float
+        $total = floatval($total);
+        $desconto = floatval($desconto);
+
+        // Validar se o desconto é menor ou igual ao total
+        if ($desconto > $total) {
+            return 'Erro: O valor do desconto não pode ser maior que o valor total.';
+        }
+
+        // Se o desconto for zero ou menor, o resultado é igual ao total
+        if ($desconto <= 0) {
+            return number_format($total, 2, '.', '');
+        }
+
+        // Subtrair os valores
+        $resultado = $total - $desconto;
+
+        // Formatar o resultado para ter duas casas decimais
+        return number_format($resultado, 2, '.', '');
+    }
+
+    public static function calcularICMS($valorMercadoria, $aliquotaICMS)
+    {
+        // Certifique-se de validar os parâmetros e tratar erros conforme necessário
+
+        // Calcula o ICMS
+        $icms = $valorMercadoria * ($aliquotaICMS / 100);
+
+        return $icms;
+    }
+
+    public static function CalculosMagico($frete, $produto, $valorTotalNota)
+    {
+        // Certifique-se de que os valores são tratados como números decimais
+        $proporcaoProduto = $produto / $valorTotalNota;
+
+        // Calcula a parte proporcional do frete para o produto
+        $parteFrete = $frete * $proporcaoProduto;
+
+        return $parteFrete;
+    }
+
+    public static function cestado($valor)
+    {
+        return substr($valor, 0, 2);
+    }
+
+    public static function TrataDoc($valor)
+    {
+        $antes = ['.', '-', '/', '(', ')', ' '];
+        $depos = ['', '', '', '', '', ''];
+        return str_replace($antes, $depos, $valor);
+    }
+
+    // MasterClass::getverifica()
+
+    public function removeSpecialCharacters($str)
+    {
+        // Remove caracteres especiais (/-.,)
+        $cleanedStr = preg_replace('/[-\/.,]/', '', $str);
+        return $cleanedStr;
+    }
+
+    public function isCpfOrCnpj($str)
+    {
+        // Remove caracteres não numéricos
+        $cleanedStr = preg_replace('/\D/', '', $str);
+
+        // Verifica se a sequência tem 11 dígitos (CPF) ou 14 dígitos (CNPJ)
+        if (strlen($cleanedStr) == 11) {
+            // Pode ser um CPF
+            // Aqui você pode adicionar a lógica de validação do CPF
+            if (preg_match('/(\d)\1{10}/', $cleanedStr)) {
+                return false;
+            }
+            
+            for ($t = 9; $t < 11; $t++) {
+                for ($d = 0, $c = 0; $c < $t; $c++) {
+                    $d += $cleanedStr[$c] * (($t + 1) - $c);
+                    }
+                    $d = ((10 * $d) % 11) % 10;
+                    if ($cleanedStr[$c] != $d) {
+                        return false;
+                        //return 'CPF '.$cleanedStr . ' Inválido';
+                    }
+                }
+            return true;
+            //return 'CPF '.$cleanedStr . ' Válido';
+
+            
+            
+        } elseif (strlen($cleanedStr) == 14) {
+            // Pode ser um CNPJ
+            // Aqui você pode adicionar a lógica de validação do CNPJ
+            return 'CNPJ';
+        } else {
+            // Sequência inválida
+            return 'Inválido';
+        }
+    }
+
+    public static function getverifica($caminhoPFX, $senhaPFX, $id)
+    {
+        // Carrega o certificado PFX
+        $certificado = file_get_contents($caminhoPFX);
+
+        if (!$certificado) {
+            return false;  // Falha ao carregar o certificado
+        }
+
+        // Tenta decodificar o certificado PFX
+        if (openssl_pkcs12_read($certificado, $p12, $senhaPFX)) {
+            $cert_info = openssl_x509_parse($p12['cert']);
+
+            // A data de validade é armazenada em $cert_info['validTo_time_t']
+            // Você pode formatar a data conforme necessário
+            $dataValidade = date('Y-m-d H:i:s', $cert_info['validTo_time_t']);
+
+            $base64Data = base64_encode($caminhoPFX);
+
+            $certificados_extra = file_get_contents($caminhoPFX);
+            $certificado_extra_base64_pfx = base64_encode($certificados_extra);
+
+            // Código gerado pelo snippet: "Conexão com banco de dados"
+            TTransaction::open('conectarbanco');
+
+            $object = Emitente::find($id);
+            if ($object) {
+                $object->centificado_base64 = $certificado_extra_base64_pfx;
+                $object->validade_certificado = $dataValidade;
+                $object->store();
+            }
+
+            TTransaction::close();
+        } else {
+            return false;  // Falha ao decodificar o certificado
+        }
+    }
+
+    public static function converterData_H($data)
+    {
+        $dt = new DateTime($data);
+        return $dt->format('d/m/Y H:i:s');
+    }
+
+    public static function converterDataBr($data)
+    {
+        $dt = new DateTime($data);
+        return $dt->format('d/m/Y');
+    }
+
+    public static function converterDataBrCompetencia($data)
+    {
+        $dt = new DateTime($data);
+        return $dt->format('m/Y');
+    }
+
+    public static function ZerosAEsquerda($numero, $quandidade)
+    {
+        // Adiciona 5 zeros à esquerda do número
+        $numeroFormatado = str_pad($numero, $quandidade, '0', STR_PAD_LEFT);
+
+        return $numeroFormatado;
+    }
+
+    public static function limitarTexto($texto, $limite)
+    {
+        // Verifica se o texto possui mais caracteres que o limite
+        if (strlen($texto) > $limite) {
+            // Corta o texto para o limite especificado e adiciona reticências
+            $texto = substr($texto, 0, $limite) . '...';
+        }
+
+        // Retorna o texto resultante
+        return $texto;
+    }
+
+    public static function validarValor($valor)
+    {
+        $minimo = 0;
+        $descricao = 'Valor da nfe em R$ - Use o formato com ponto na separação de decimais e não use vírgula, ex. 100.00';
+
+        if (!is_numeric($valor)) {
+            return 'O valor não é numérico.';
+        }
+
+        if ($valor < $minimo) {
+            return "O valor mínimo permitido é $minimo.";
+        }
+
+        // Formate o valor com duas casas decimais
+        $valorFormatado = number_format($valor, 2, '.', '');
+
+        return $valorFormatado;
+    }
+
+    public static function ErroXML($mensagem)
+    {
+        $Resposta2 = explode('{http://www.portalfiscal.inf.br/nfe}', $mensagem);
+        $resultado = '';
+        foreach ($Resposta2 as $lista):
+            $resultado .= $lista;
+        endforeach;
+
+        $Resposta1 = explode('Este XML não é válido.', $resultado);
+
+        $stringLimpa = preg_replace("/(The value|\[facet 'pattern']|is not accepted by the pattern)/", '', $Resposta1[1]);
+
+        return [
+            'codigo' => 302,
+            'mensagem' => $stringLimpa,
+        ];
+    }
+
+    /**
+     * Converte uma data para o formato "d/m/Y".
+     *
+     * @param string $data A data a ser convertida.
+     * @return string A data convertida.
+     */
+    public static function data_BR($data)
+    {
+        $dataConvertida = date('d/m/Y', strtotime($data));
+        return $dataConvertida;
+    }
+  public static function data_USA($data)
+    {
+        $dataConvertida = date('Y-m-d', strtotime($data));
+        return $dataConvertida;
+    }
+
+    public static function calcularDataFutura($dias)
+    {
+        $dataAtual = date('Y-m-d');  // Data atual no formato "AAAA-MM-DD"
+        $dataFutura = date('Y-m-d', strtotime("-$dias days", strtotime($dataAtual)));
+        return $dataFutura;
+    }
+
+    /**
+     * Salva informações relacionadas a uma venda em formato XML no banco de dados.
+     *
+     * @param int $id - Identificador único da venda.
+     * @param string $file - Conteúdo do arquivo XML ou caminho do arquivo no sistema de arquivos.
+     * @param string $chave - Chave associada à venda.
+     * @param string $variavel_banco - Nome da variável no objeto de venda que armazenará o conteúdo do XML.
+     * @param string|null $protocolo_envio - Protocolo de envio associado à venda (pode ser nulo).
+     * @param int $controleSerie_id - Identificador relacionado ao controle de série.
+     * @param int|null $finalizar - Indicador para finalizar a venda (pode ser nulo).
+     *
+     * @return bool - Retorna verdadeiro se a operação for bem-sucedida.
+     */
+    public static function SalvaXML($id, $file, $chave, $variavel_banco, $protocolo_envio = null, $controleSerie_id=null, $finalizar = null, $ValorNF = null)
+    {
+        $objeto = PedidoVenda::find($id);
+        if ($objeto) {
+            if ($variavel_banco != 'xml') {
+                // Se não for 'xml', atribui diretamente o conteúdo do arquivo à variável no objeto
+                $objeto->$variavel_banco = $file;
+            } else {
+                // Se for 'xml', converte o conteúdo do arquivo para base64 e atribui à variável no objeto
+                $base64_encoded = base64_encode($file);
+                $objeto->$variavel_banco = $base64_encoded;
+            }
+            // Atribui a chave e o protocolo de envio ao objeto de venda
+            $objeto->chave = $chave;
+            $objeto->protocolo_envio = $protocolo_envio ?? null;
+            // Verifica se a venda deve ser finalizada
+            if ($finalizar == 1) {
+                $objeto->status = 'AUTORIZADA';
+                $objeto->estado_pedido_venda_id =11;
+                $objeto->codigo_sefaz = 100;
+                $objeto->protocolo_numero = $protocolo_envio;
+                $objeto->data_final_processo = date('Y-m-d H:i:s');
+                $objeto->referenciada = 'N';
+
+             
+                //     InsertparcelaFinaceiro::gera($id,$ValorNF);
+                // SolicitacaoEventos::create( $id , 'Gerando Financeiro', 'Cobrança', '');
+              //  SolicitacaoEventos::create($id, 'Ajuste estoque ', 'Baixa', '');
+            }
+
+            // Armazena o objeto no banco de dados
+            $objeto->store();
+        }
+        // Fecha a transação no banco de dados
+
+        // Retorna verdadeiro indicando que a operação foi bem-sucedid
+        return true;
+    }
+
+    public static function CartaOFF($pedido)
+    {
+        // Substitua 'campo_condicao' pelo campo que deseja verificar na tabela PedidoEvento
+        $pedido = PedidoEvento::where('venda_id', '=', $pedido)->first();
+
+        TTransaction::close();
+        if (isset($pedido->id)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public static function calcularCfop($uf_emitente, $uf_destino)
+    {
+        // Verificar se a UF do emitente é igual à UF do destinatário
+        if ($uf_emitente == $uf_destino) {
+            // Se forem diferentes, atribuir um valor específico para idDest
+            return ['idDest' => 1];  // Por exemplo, 1 para mesma UF e CFOP 5102
+        } else {
+            // Se forem iguais, atribuir outro valor específico para idDest
+            return ['idDest' => 2];  // Por exemplo, 2 para UFs diferentes e CFOP 6102
+        }
+
+        // Se não atender a nenhuma das condições anteriores, atribuir 3 para idDest
+        return ['idDest' => 3];
+    }
+
+    public static function SeachCFOP($id, $idDest)
+    {
+        $objeto = CfopControle::where('cfop', '=', $id)->first();
+
+        switch ($idDest) {
+            case 1:
+                return '5' . $objeto->cfop;
+                break;
+
+            case 2:
+                return '6' . $objeto->cfop;
+                break;
+
+            case 3:
+                return '6' . $objeto->cfop;
+                break;
+        }
+    }
+
+    public static function DesabilitarBotao($grupo)
+    {
+        $objeto = SystemUserGroup::where('system_user_id', '=', TSession::getValue('userid'))
+            ->where('system_group_id', '=', $grupo)
+            ->first();
+        if ($objeto) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public static function cleanPasta($value)
+    {
+        $dataHora = $value;
+        $caractereSubstituto = '_';
+
+        // Remova espaços, dois pontos ':' e hífens '-' e substitua por um caractere específico
+        $dataHoraFormatada = str_replace([':/[^a-zA-Z0-9]/', '-'], $caractereSubstituto, $dataHora);
+
+        return $dataHoraFormatada;  // Resultado: "20231019235959"
+    }
+
+    public static function LimpaTexto($string)
+    {
+        $acentosEspeciais = array(
+            'á' => 'a',
+            'é' => 'e',
+            'í' => 'i',
+            'ó' => 'o',
+            'ú' => 'u',
+            'ç' => 'c',
+            'ã' => 'a',
+            'õ' => 'o',
+            // Adicione mais caracteres conforme necessário
+        );
+
+        // Substitui os acentos e caracteres especiais
+        $str = strtr($string, $acentosEspeciais);
+
+        return $str;
+    }
+
+    public static function removerAcentos($string)
+    {
+        $string = preg_replace('/[áàâãä]/u', 'a', $string);
+        $string = preg_replace('/[ÁÀÂÃÄ]/u', 'A', $string);
+        $string = preg_replace('/[éèêë]/u', 'e', $string);
+        $string = preg_replace('/[ÉÈÊË]/u', 'E', $string);
+        $string = preg_replace('/[íìîï]/u', 'i', $string);
+        $string = preg_replace('/[ÍÌÎÏ]/u', 'I', $string);
+        $string = preg_replace('/[óòôõö]/u', 'o', $string);
+        $string = preg_replace('/[ÓÒÔÕÖ]/u', 'O', $string);
+        $string = preg_replace('/[úùûü]/u', 'u', $string);
+        $string = preg_replace('/[ÚÙÛÜ]/u', 'U', $string);
+        $string = preg_replace('/[ç]/u', 'c', $string);
+        $string = preg_replace('/[Ç]/u', 'C', $string);
+
+        return $string;
+    }
+
+    public static function valorPorExtenso($valor)
+    {
+        // Separa a parte inteira e decimal
+        $parteInteira = floor($valor);
+        $parteDecimal = round(($valor - $parteInteira) * 100);
+
+        $fmt = new NumberFormatter('pt_BR', NumberFormatter::SPELLOUT);
+
+        $extensoInteira = $fmt->format($parteInteira);
+        $extensoDecimal = $fmt->format($parteDecimal);
+
+        $extenso = ucfirst($extensoInteira) . ' reais';
+
+        if ($parteDecimal > 0) {
+            $extenso .= ' e ' . $extensoDecimal . ' centavos';
+        }
+
+        return $extenso;
+    }
+    
+       
+        public static function LetrasMaiuculas($texto)
+    {
+ 
+     
+     
+       return  strtoupper($texto);
+     
+    }
+    
+}
