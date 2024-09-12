@@ -1,0 +1,80 @@
+# RateioDocumentoFiscal
+
+Este projeto contém a classe **RateioDocumentoFiscal**, que fornece um método para calcular a distribuição proporcional de frete, seguro, desconto e outras despesas entre os itens do carrinho de compras.
+
+## Código
+
+```php
+<?php
+
+class RateioDocumentoFiscal
+{
+    /**
+     * Calcula a distribuição proporcional de frete, seguro, desconto e outras despesas entre os itens do carrinho.
+     *
+     * @param array $carrinho_itens Array de objetos representando os itens no carrinho.
+     * @param float $frete Valor total do frete a ser distribuído.
+     * @param float $seguro Valor total do seguro a ser distribuído.
+     * @param float $desconto Valor total do desconto a ser distribuído.
+     * @param float $outrasdespesas Valor total de outras despesas a ser distribuído.
+     * @return array Array de objetos contendo os itens com os valores rateados adicionados.
+     */
+    public static function calcularSomas($carrinho_itens, $frete, $seguro, $desconto, $outrasdespesas)
+    {
+        // Inicializa o array para armazenar as somas totais dos itens com os valores rateados
+        $somasTotais = [];
+
+        // Calcula o valor total de todos os itens no carrinho
+        $totalItens = 0;
+        foreach ($carrinho_itens as $produtoNome) {
+            $totalItens += $produtoNome->valor_total;
+        }
+
+        // Percorre cada item no carrinho para calcular e distribuir os valores rateados
+        foreach ($carrinho_itens as $produtoNome) {
+            // Calcula a porcentagem do valor total que representa o item
+            $percentualItem = $produtoNome->valor_total / $totalItens;
+
+            // Calcula o rateio específico para cada item
+            $itemFreteRateio = $frete * $percentualItem;
+            $itemSeguroRateio = $seguro * $percentualItem;
+            $itemDescontoRateio = $desconto * $percentualItem;
+            $itemOutrasDespesasRateio = $outrasdespesas * $percentualItem;
+
+            // Inicializa as variáveis totais rateadas para o item atual
+            $totalFrete = $itemFreteRateio;
+            $totalSeguro = $itemSeguroRateio;
+            $totalDesconto = $itemDescontoRateio;
+            $totalOutrasDespesas = $itemOutrasDespesasRateio;
+
+            // Cria um novo objeto stdClass para armazenar os dados do item
+            $itemObj = new stdClass;
+
+            // Adiciona os dados do item ao objeto
+            $itemObj->id = $produtoNome->id;
+            $itemObj->quantidade = $produtoNome->quantidade;
+            $itemObj->valor = $produtoNome->valor_unitario;
+            $itemObj->produto_id = $produtoNome->produto_id;
+            $itemObj->pedido_venda_id = $produtoNome->pedido_venda_id;
+            $itemObj->valor_total = $produtoNome->valor_total;
+            $itemObj->nome = $produtoNome->produto->nome;
+            $itemObj->ncm = $produtoNome->produto->ncm;
+            $itemObj->cfop_saida = $produtoNome->produto->cfop_saida;
+            $itemObj->ucom = $produtoNome->produto->unidade_medida->sigla;
+            $itemObj->venda_orig_id = $produtoNome->produto->venda_orig_id;
+            $itemObj->venda_modbc_id = $produtoNome->produto->venda_modbc_id;
+
+            // Adiciona as variáveis rateadas ao objeto
+            $itemObj->frete_apagar = $totalFrete;
+            $itemObj->seguro_apagar = $totalSeguro;
+            $itemObj->desconto_apagar = $totalDesconto;
+            $itemObj->outrasdespesas_apagar = $totalOutrasDespesas;
+
+            // Adiciona o objeto ao array de resultados
+            $somasTotais[] = $itemObj;
+        }
+
+        // Retorna o array de resultados
+        return $somasTotais;
+    }
+}
