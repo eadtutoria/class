@@ -1,0 +1,140 @@
+# PdfExtractor
+
+O **PdfExtractor** é uma classe PHP que utiliza a biblioteca Smalot para extrair texto de arquivos PDF e processá-lo em objetos. Esta classe é útil para analisar documentos PDF e transformar seu conteúdo em uma forma estruturada para processamento adicional.
+
+## Descrição
+
+A classe `PdfExtractor` fornece funcionalidades para:
+- Extrair texto de um arquivo PDF.
+- Dividir o texto extraído em parágrafos e criar objetos com índices.
+- Adicionar objetos adicionais com base em critérios específicos (exemplo: se o parágrafo contém a palavra "Item").
+
+### Requisitos
+
+Este projeto depende da biblioteca `smalot/pdfparser` para a extração de texto dos arquivos PDF. Certifique-se de que a biblioteca está instalada antes de usar a classe.
+
+Para instalar a biblioteca, você pode usar o Composer com o seguinte comando:
+
+```bash
+composer require smalot/pdfparser:^2.10
+
+
+```<?php
+use Smalot\PdfParser\Parser;
+
+/**
+ * Classe PdfExtractor
+ *
+ * Essa classe utiliza a biblioteca Smalot para extrair texto de arquivos PDF.
+ * 
+ * @author Rubens dos Santos
+ * @contact salvadorbba@gmail.com
+ * @phone 71996758056
+ */
+class PdfExtractor
+{
+    private $parser;
+
+    /**
+     * Construtor da classe
+     *
+     * Inicializa o parser da biblioteca Smalot.
+     */
+    public function __construct()
+    {
+        // Inicializa o parser da biblioteca Smalot
+        $this->parser = new Parser();
+    }
+
+    /**
+     * Extrai o texto de um arquivo PDF
+     *
+     * @param string $pdfFilePath O caminho completo para o arquivo PDF.
+     * @return string O texto extraído do PDF ou uma mensagem de erro.
+     */
+    public function extractTextFromPdf($pdfFilePath)
+    {
+        try {
+            // Carrega o PDF a partir do caminho do arquivo
+            $pdf = $this->parser->parseFile($pdfFilePath);
+            
+            // Extrai o texto do PDF
+            $text = $pdf->getText();
+            
+            return $text;
+        } catch (Exception $e) {
+            // Trata qualquer exceção que possa ocorrer durante a extração do PDF
+            return 'Erro ao processar o PDF: ' . $e->getMessage();
+        }
+    }
+
+    /**
+     * Divide o texto extraído em objetos separados com índices
+     *
+     * @param string $text O texto completo extraído do PDF.
+     * @return array Um array de objetos contendo as partes do texto, cada um com um índice.
+     */
+    private function splitTextIntoObjects($text)
+    {
+        // Divida o texto em parágrafos com base em quebras de linha duplas
+        $paragraphs = preg_split("/\r\n|\r|\n/", trim($text));
+        
+        // Converta cada parágrafo em um objeto com um índice
+        $objects = [];
+        foreach ($paragraphs as $index => $paragraph) {
+            // Criando o objeto principal
+            $objects[] = (object)[
+                'id' => 'Paragraph_' . ($index + 1),  // Nome do índice
+                'content' => $paragraph
+            ];
+
+            // Verifica se o parágrafo atende a um critério (por exemplo, se contém uma palavra específica)
+            if ($this->shouldAddAdditionalObject($paragraph)) {
+                // Adiciona um objeto adicional se o critério for atendido
+                $objects[] = (object)[
+                    'id' => 'Additional_' . ($index + 1),  // Nome do índice para o objeto adicional
+                    'content' => 'Conteúdo adicional relacionado ao parágrafo: ' . ($index + 1)
+                ];
+            }
+        }
+        
+        return $objects;
+    }
+
+    /**
+     * Verifica se deve adicionar um objeto adicional com base no conteúdo do parágrafo
+     *
+     * @param string $paragraph O parágrafo atual.
+     * @return bool Retorna true se deve adicionar um objeto adicional, false caso contrário.
+     */
+    private function shouldAddAdditionalObject($paragraph)
+    {
+        // Exemplo: Adiciona um objeto adicional se o parágrafo contiver a palavra "Item"
+        return stripos($paragraph, 'Item') !== false;
+    }
+
+    /**
+     * Método principal para extração de dados e retorno como objetos
+     *
+     * Esse método recebe o caminho do PDF, extrai o texto e retorna como objetos.
+     *
+     * @param string $pdfPath O caminho completo para o arquivo PDF.
+     * @return array Um array de objetos contendo as partes do texto com índices.
+     */
+    public function extractData($pdfPath)
+    {
+        // Extrai o texto do PDF
+        $text = $this->extractTextFromPdf($pdfPath);
+        
+        // Divide o texto em objetos separados
+        $objects = $this->splitTextIntoObjects($text);
+
+        return $objects;
+    }
+}
+ Exemplo de Uso
+$pdfExtractor = new PdfExtractor();
+$extractedObjects = $pdfExtractor->extractData('https://erp.developerapi.com.br/app/output/pdf/venda800-manual.pdf');
+
+echo '<pre>';
+print_r($extractedObjects);
